@@ -33,6 +33,12 @@
       ],
       "@app/kafka/*": [
         "libs/kafka/src/*"
+      ],
+      "@app/prisma": [
+        "libs/prisma/src"
+      ],
+      "@app/prisma/*": [
+        "libs/prisma/src/*"
       ]
     }
   }
