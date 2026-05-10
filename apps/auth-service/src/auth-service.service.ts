@@ -1,13 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { LoginDto, RegisterDto } from '@app/common/dto';
 import { KAFKA_SERVICE, KAFKA_TOPICS } from '@app/kafka';
 import { PrismaService } from '@app/prisma';
-import { BadRequestException, Inject, Injectable, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  OnModuleInit,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
@@ -32,7 +37,8 @@ export class AuthServiceService implements OnModuleInit {
       if (existUser) {
         throw new BadRequestException('User already exists');
       }
-      const hashPass = await bcrypt.hash(dto.password, 10);
+      const SALT_ROUNDS = Number(process.env.BCRYPT_SALT_ROUNDS) || 12;
+      const hashPass = await bcrypt.hash(dto.password, SALT_ROUNDS);
       const user = await this.prisma.user.create({
         data: {
           email: dto.email,
@@ -53,7 +59,10 @@ export class AuthServiceService implements OnModuleInit {
       };
     } catch (error: any) {
       console.log(error);
-      throw new Error(error.message || 'Internal server error!');
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(error.message || 'Internal server error', 500);
     }
   }
 
@@ -63,17 +72,20 @@ export class AuthServiceService implements OnModuleInit {
         where: { email: dto.email },
       });
       if (!user) {
-        throw new UnauthorizedException('User not found with this email!');
+        return {
+          message: 'User not found with this email!',
+          success: false,
+        };
       }
       const isValidPass = await bcrypt.compare(dto.password, user.password);
       if (!isValidPass) {
-        throw new UnauthorizedException('Invalid password');
+        throw new UnauthorizedException('Invalid credentials');
       }
       const secret = process.env.JWT_SECRET;
-      if (!secret) throw new Error('JWT_SECRET missing');
+      if (!secret) throw new InternalServerErrorException('JWT secret missing');
       const token = jwt.sign(
         {
-          sub: user.id,
+          userId: user.id,
           email: user.email,
         },
         secret,
@@ -87,15 +99,51 @@ export class AuthServiceService implements OnModuleInit {
         timestamp: new Date().toISOString(),
       });
       const { password, ...safeUser } = user;
-       return {
-         message: 'Login successful',
-         success: true,
-         accessToken: token,
-         data: safeUser,
-       };
+      return {
+        message: 'Login successful',
+        success: true,
+        accessToken: token,
+        data: safeUser,
+      };
     } catch (error) {
       console.log(error);
-      throw new Error(error.message || 'Internal server error!');
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(error.message || 'Internal server error', 500);
+    }
+  }
+
+  async getProfile(userId: string) {
+    try {
+      if (!userId) {
+        throw new BadRequestException('User ID missing');
+      }
+      const user = await this.prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+        },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User not found!');
+      }
+      return {
+        success: true,
+        message: 'Your profile data is fetched',
+        data: user,
+      };
+    } catch (error) {
+      console.log(error);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(error.message || 'Internal server error', 500);
     }
   }
 }
