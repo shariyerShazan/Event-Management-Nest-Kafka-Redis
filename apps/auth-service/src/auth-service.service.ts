@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { LoginDto, RegisterDto } from '@app/common/dto';
 import { KAFKA_SERVICE, KAFKA_TOPICS } from '@app/kafka';
-import { PrismaService } from '@app/prisma';
+import { AuthPrismaService } from '@app/prisma';
 import {
   BadRequestException,
   HttpException,
@@ -16,11 +18,12 @@ import {
 import { ClientKafka } from '@nestjs/microservices';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+
 @Injectable()
 export class AuthServiceService implements OnModuleInit {
   constructor(
     @Inject(KAFKA_SERVICE) private readonly kafkaClinet: ClientKafka,
-    private readonly prisma: PrismaService,
+    private readonly prisma: AuthPrismaService,
   ) {}
 
   async onModuleInit() {

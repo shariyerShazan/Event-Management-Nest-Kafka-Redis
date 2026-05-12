@@ -7,7 +7,7 @@ import { KafkaModule } from '@app/kafka';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from '@app/prisma';
 import { JwtModule } from '@nestjs/jwt';
-import { JwtStrategy } from './jwt/jwt.strategy';
+import { JwtStrategy } from '../../api-gateway/src/jwt/jwt.strategy';
 import { ConfigModule } from '@nestjs/config';
 @Module({
   imports: [
