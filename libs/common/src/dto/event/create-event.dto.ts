@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsDateString,
-  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -38,13 +36,6 @@ export class CreateEventDto {
   description: string;
 
   @ApiProperty({
-    example: '2026-06-15T10:00:00.000Z',
-    description: 'Event date',
-  })
-  @IsDateString()
-  date: string;
-
-  @ApiProperty({
     example: 'Dhaka, Bangladesh',
     description: 'Event location',
   })
@@ -63,13 +54,4 @@ export class CreateEventDto {
   @IsInt()
   @Min(0)
   price?: number;
-
-  @ApiPropertyOptional({
-    enum: EventStatus,
-    example: EventStatus.DRAFT,
-    default: EventStatus.DRAFT,
-  })
-  @IsOptional()
-  @IsEnum(EventStatus)
-  status?: EventStatus;
 }
