@@ -1,27 +1,26 @@
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Headers } from '@nestjs/common';
 import { AuthServiceService } from './auth-service.service';
 import { LoginDto, RegisterDto } from '@app/common/dto';
-import { AuthGuard } from '@nestjs/passport';
 
 @Controller()
 export class AuthServiceController {
   constructor(private readonly authServiceService: AuthServiceService) {}
 
+  // ---------------- REGISTER ----------------
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     return this.authServiceService.register(dto);
   }
 
+  // ---------------- LOGIN ----------------
   @Post('login')
   async login(@Body() dto: LoginDto) {
     return this.authServiceService.login(dto);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  // ---------------- GET PROFILE (microservice style) ----------------
   @Get('get-me')
-  async getMe(@Req() req: any) {
-    return this.authServiceService.getProfile(req.user.userId);
+  async getMe(@Headers('user-id') userId: string) {
+    return this.authServiceService.getProfile(userId);
   }
 }
